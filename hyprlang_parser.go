@@ -44,7 +44,11 @@ func WriteConfig(content []string, filename string) (err error) {
 }
 
 func GetFirst(content []string, section, variable string) string {
-	return utils.GetVariables(content, section, variable)[0]
+	variables := utils.GetVariables(content, section, variable)
+	if len(variables) == 0 {
+		return ""
+	}
+	return variables[0]
 }
 
 func GetN(content []string, section, variable string, n int) string {

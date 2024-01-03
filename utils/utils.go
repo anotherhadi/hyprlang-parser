@@ -169,13 +169,14 @@ func EditVariable(content []string, section, variable, value string, n int) []st
 							content[lineIndex] += "  "
 						}
 						content[lineIndex] += variable + "=" + value
+						return content
 					}
 					i++
-
 				}
 			}
 		}
 	}
+	content = AddVariable(content, section, variable, value)
 	return content
 }
 
@@ -196,9 +197,9 @@ func RemoveVariable(content []string, section, variable string, n int) []string 
 				if formatValue(splitedTrimmedLine[0]) == variable {
 					if i == n {
 						content = remove(content, lineIndex)
+						return content
 					}
 					i++
-
 				}
 			}
 		}
