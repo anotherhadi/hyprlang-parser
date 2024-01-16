@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/anotherhadi/hyprlang_parser/utils"
+	"github.com/anotherhadi/hyprlang-parser/utils"
 )
 
 func ReadConfig(filename string) (content []string, err error) {

@@ -3,7 +3,7 @@ package hyprlang_parser_test
 import (
 	"testing"
 
-	"github.com/anotherhadi/hyprlang_parser"
+	"github.com/anotherhadi/hyprlang-parser"
 )
 
 const configPath = "test_config/example.conf"
