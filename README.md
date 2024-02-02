@@ -1,9 +1,9 @@
 # Hyprlang Parser
 
 <p>
-    <a href="https://github.com/anotherhadi/hyprlang-parser/releases"><img src="https://img.shields.io/github/release/anotherhadi/md-table-of-contents.svg" alt="Latest Release"></a>
+    <a href="https://github.com/anotherhadi/hyprlang-parser/releases"><img src="https://img.shields.io/github/release/anotherhadi/hyprlang-parser.svg" alt="Latest Release"></a>
     <a href="https://pkg.go.dev/github.com/anotherhadi/hyprlang-parser?tab=doc"><img src="https://godoc.org/github.com/golang/gddo?status.svg" alt="GoDoc"></a>
-    <a href="https://goreportcard.com/report/github.com/anotherhadi/hyprlang-parser"><img src="https://goreportcard.com/badge/github.com/anotherhadi/md-table-of-contents" alt="GoReportCard"></a>
+    <a href="https://goreportcard.com/report/github.com/anotherhadi/hyprlang-parser"><img src="https://goreportcard.com/badge/github.com/anotherhadi/hyprlang-parser" alt="GoReportCard"></a>
 </p>
 
 A Golang implementation library for the hypr config language.
