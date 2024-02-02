@@ -1,88 +1,143 @@
 package hyprlang_parser
 
 import (
-	"bufio"
-	"fmt"
-	"os"
-
-	"github.com/anotherhadi/hyprlang-parser/utils"
+	"errors"
 )
 
-func ReadConfig(filename string) (content []string, err error) {
-	file, err := os.OpenFile(filename, os.O_RDWR, 0644)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		content = append(content, line)
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return content, nil
+type configFile struct {
+	path    string   // Path of the file
+	content []string // Content, line by line, of the file
+	changed bool     // Store if config has changed
 }
 
-func WriteConfig(content []string, filename string) (err error) {
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+type Config struct {
+	configFiles []configFile // List of config files (sources included)
+	indentation int          // Indentation of the config file, based on the first section of the entry file
+}
 
-	writer := bufio.NewWriter(file)
-	for _, line := range content {
-		_, err := fmt.Fprintln(writer, line)
-		if err != nil {
-			return err
+// LoadConfig loads config at {configPath} and returns a Config struct
+// It also adds the sourced configuration files
+func LoadConfig(configPath string) (config Config, err error) {
+	err = config.addConfigFile(configPath)
+	config.indentation = getIndentation(&config.configFiles[0].content)
+	return
+}
+
+// WriteConfig writes/saves changed configs
+func (c *Config) WriteConfig() error {
+	for i, configFile := range c.configFiles {
+		if configFile.changed {
+			err := configFile.writeFile()
+			if err != nil {
+				return err
+			}
+			c.configFiles[i].changed = false
+		}
+	}
+	return nil
+}
+
+// GetFirst returns the first value for {variable} at {section}
+func (c *Config) GetFirst(section, variable string) string {
+	var value string
+	for _, configFile := range c.configFiles {
+		values := getVariables(configFile.content, parseSectionString(section), variable, -1)
+		if len(values) > 0 {
+			return values[0]
+		}
+	}
+	return value
+}
+
+// GetAll returns all the values for {variable} at {section}
+func (c *Config) GetAll(section, variable string) []string {
+	var values []string
+	for _, configFile := range c.configFiles {
+		values = append(values, getVariables(configFile.content, parseSectionString(section), variable, 0)...)
+	}
+	return values
+}
+
+// EditFirst changes the value of the first {variable} at {section} to {value}
+// It returns an error if the variable was not found
+func (c *Config) EditFirst(section, variable, value string) error {
+	var isEdited bool
+	for i, configFile := range c.configFiles {
+		isEdited = editVariableN(&configFile.content, parseSectionString(section), variable, value, 0, c.indentation)
+		if isEdited {
+			c.configFiles[i].changed = true
+			return nil
 		}
 	}
 
-	return writer.Flush()
+	return errors.New("Variable not found (Not edited).")
 }
 
-func GetFirst(content []string, section, variable string) string {
-	variables := utils.GetVariables(content, section, variable)
-	if len(variables) == 0 {
-		return ""
+// EditN changes the value of the {n} {variable} at {section} to {value}
+// It returns an error if the variable was not found
+func (c *Config) EditN(section, variable, value string, n int) error {
+	var isEdited bool
+	for i, configFile := range c.configFiles {
+		isEdited = editVariableN(&configFile.content, parseSectionString(section), variable, value, n, c.indentation)
+		if isEdited {
+			c.configFiles[i].changed = true
+			return nil
+		}
 	}
-	return variables[0]
+
+	return errors.New("Variable not found (Not edited).")
 }
 
-func GetN(content []string, section, variable string, n int) string {
-	variables := utils.GetVariables(content, section, variable)
-	if n > len(variables)-1 {
-		return ""
+// Add creates a {variable} at {section} with the {value} value
+// It creates the sections if they don't exist
+// If sections are not found, it will add the sections and the variable to the first config file
+func (c *Config) Add(section, variable, value string) {
+	var whereSectionExist *configFile
+	var exist bool = false
+
+	for _, configFile := range c.configFiles {
+		exist = doesSectionExist(&configFile.content, parseSectionString(section))
+		if exist {
+			whereSectionExist = &configFile
+			break
+		}
 	}
-	return variables[n]
+
+	if exist {
+		addVariable(&whereSectionExist.content, parseSectionString(section), variable, value, c.indentation)
+	} else {
+		parsedSection := parseSectionString(section)
+		for i := 0; i < len(parsedSection); i++ {
+			if !doesSectionExist(&c.configFiles[0].content, parsedSection[:i+1]) {
+				addSection(&c.configFiles[0].content, parsedSection[:i], parsedSection[i], c.indentation)
+			}
+		}
+		addVariable(&c.configFiles[0].content, parsedSection, variable, value, c.indentation)
+	}
 }
 
-func GetAll(content []string, section, variable string) []string {
-	return utils.GetVariables(content, section, variable)
+// RemoveFirst removes the first {variable} at {section}
+// It returns an error if the variable is not found
+func (c *Config) RemoveFirst(section, variable string) error {
+	var isRemoved bool
+	for _, configFile := range c.configFiles {
+		isRemoved = removeVariableN(&configFile.content, parseSectionString(section), variable, 0)
+		if isRemoved {
+			return nil
+		}
+	}
+	return errors.New("Variable not found (Not removed).")
 }
 
-func GetSection(content []string, section string) [][]string {
-	return utils.GetSection(content, section)
-}
-
-func AddVariable(content []string, section, variable, value string) []string {
-	return utils.AddVariable(content, section, variable, value)
-}
-
-func RemoveFirst(content []string, section, variable string) []string {
-	return utils.RemoveVariable(content, section, variable, 0)
-}
-
-func RemoveN(content []string, section, variable string, n int) []string {
-	return utils.RemoveVariable(content, section, variable, n)
-}
-
-func EditFirst(content []string, section, variable, value string) []string {
-	return utils.EditVariable(content, section, variable, value, 0)
-}
-
-func EditN(content []string, section, variable, value string, n int) []string {
-	return utils.EditVariable(content, section, variable, value, n)
+// RemoveN removes the {n} {variable} at {section}
+// It returns an error if the variable is not found
+func (c *Config) RemoveN(section, variable string, n int) error {
+	var isRemoved bool
+	for _, configFile := range c.configFiles {
+		isRemoved = removeVariableN(&configFile.content, parseSectionString(section), variable, n)
+		if isRemoved {
+			return nil
+		}
+	}
+	return errors.New("Variable not found (Not removed).")
 }
