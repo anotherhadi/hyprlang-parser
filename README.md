@@ -39,4 +39,4 @@ So, for example, to retrieve the enabled variable in the decoration section for 
 
 ## Example:
 
-You can find more examples and usage in [`hyprlang_parser_test.go`](hyprland_parser_test.go).
+You can find more examples and usage in [`hyprlang_parser_test.go`](hyprlang_parser_test.go).
