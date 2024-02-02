@@ -8,6 +8,12 @@
 
 A Golang implementation library for the hypr config language.
 
+## Installation
+
+```bash
+go get https://github.com/anotherhadi/hyprlang-parser@latest
+```
+
 ## Functions
 
 **Understanding Section and Variable Parameters:**
