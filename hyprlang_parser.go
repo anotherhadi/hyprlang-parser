@@ -92,19 +92,20 @@ func (c *Config) EditN(section, variable, value string, n int) error {
 // It creates the sections if they don't exist
 // If sections are not found, it will add the sections and the variable to the first config file
 func (c *Config) Add(section, variable, value string) {
-	var whereSectionExist *configFile
+	var whereSectionExist int
 	var exist bool = false
 
-	for _, configFile := range c.configFiles {
+	for i, configFile := range c.configFiles {
 		exist = doesSectionExist(&configFile.content, parseSectionString(section))
 		if exist {
-			whereSectionExist = &configFile
+			whereSectionExist = i
 			break
 		}
 	}
 
 	if exist {
-		addVariable(&whereSectionExist.content, parseSectionString(section), variable, value, c.indentation)
+		addVariable(&c.configFiles[whereSectionExist].content, parseSectionString(section), variable, value, c.indentation)
+		c.configFiles[whereSectionExist].changed = true
 	} else {
 		parsedSection := parseSectionString(section)
 		for i := 0; i < len(parsedSection); i++ {
@@ -113,6 +114,7 @@ func (c *Config) Add(section, variable, value string) {
 			}
 		}
 		addVariable(&c.configFiles[0].content, parsedSection, variable, value, c.indentation)
+		c.configFiles[0].changed = true
 	}
 }
 
@@ -120,9 +122,10 @@ func (c *Config) Add(section, variable, value string) {
 // It returns an error if the variable is not found
 func (c *Config) RemoveFirst(section, variable string) error {
 	var isRemoved bool
-	for _, configFile := range c.configFiles {
+	for i, configFile := range c.configFiles {
 		isRemoved = removeVariableN(&configFile.content, parseSectionString(section), variable, 0)
 		if isRemoved {
+			c.configFiles[i].changed = true
 			return nil
 		}
 	}
@@ -133,9 +136,10 @@ func (c *Config) RemoveFirst(section, variable string) error {
 // It returns an error if the variable is not found
 func (c *Config) RemoveN(section, variable string, n int) error {
 	var isRemoved bool
-	for _, configFile := range c.configFiles {
+	for i, configFile := range c.configFiles {
 		isRemoved = removeVariableN(&configFile.content, parseSectionString(section), variable, n)
 		if isRemoved {
+			c.configFiles[i].changed = true
 			return nil
 		}
 	}
